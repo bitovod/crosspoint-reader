@@ -7,6 +7,7 @@
 #include <string_view>
 
 class BookMetadataCache;
+class HalFile;
 
 class Txt {
  public:
@@ -14,6 +15,7 @@ class Txt {
   static bool validateCache(const std::string& filepath, const std::string& cachePath, size_t cachedSize);
   static void invalidateCache(const std::string& cachePath);
   static bool streamTxtToHtml(const std::string& filepath, Print& out);
+  static bool streamPdbToHtml(const std::string& filepath, HalFile& src, Print& out);
   static std::string findCompanionCoverImage(const std::string& filepath);
   static bool convertCoverImageToBmp(const std::string& imagePath, const std::string& destBmpPath, int thumbHeight = 0,
                                      bool cropped = false, bool originalThresholds = false);

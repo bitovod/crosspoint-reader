@@ -66,6 +66,9 @@ inline bool hasTxtExtension(const String& fileName) {
 // Check for .md extension (case-insensitive)
 bool hasMarkdownExtension(std::string_view fileName);
 
+// Check for .pdb extension (PalmDOC e-book, case-insensitive)
+bool hasPdbExtension(std::string_view fileName);
+
 bool hasReflowableBookExtension(std::string_view fileName);
 
 // Check for .css extension (case-insensitive)

@@ -10,7 +10,7 @@ namespace {
 using namespace std::string_view_literals;
 
 TEST(ReflowableBookExtension, IncludesTextFormatsAndExcludesImageBooks) {
-  for (const auto path : {"/Books/book.epub"sv, "book.TXT"sv, "book.mD"sv}) {
+  for (const auto path : {"/Books/book.epub"sv, "book.TXT"sv, "book.mD"sv, "book.PDB"sv}) {
     EXPECT_TRUE(FsHelpers::hasReflowableBookExtension(path));
   }
   for (const auto path : {"book.xtc"sv, "book.XTCH"sv, "book.bmp"sv, "book.epub.bak"sv, ""sv}) {

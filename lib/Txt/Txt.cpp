@@ -12,10 +12,11 @@
 
 #include <cstring>
 
+#include "PdbReader.h"
 #include "TxtToHtml.h"
 
 bool Txt::isTxtOrMd(std::string_view path) {
-  return FsHelpers::hasTxtExtension(path) || FsHelpers::hasMarkdownExtension(path);
+  return FsHelpers::hasTxtExtension(path) || FsHelpers::hasMarkdownExtension(path) || FsHelpers::hasPdbExtension(path);
 }
 
 std::string Txt::findCompanionCoverImage(const std::string& filepath) {
@@ -94,6 +95,33 @@ bool Txt::convertCoverImageToBmp(const std::string& imagePath, const std::string
   return success;
 }
 
+bool Txt::streamPdbToHtml(const std::string& filepath, HalFile& src, Print& out) {
+  const uint32_t t0 = millis();
+  // Holds a 256 B input chunk (over the stack budget) and owns the 4 KB record buffer.
+  auto reader = makeUniqueNoThrow<PdbReader>();
+  if (!reader) {
+    LOG_ERR("TXT", "OOM: PDB reader");
+    return false;
+  }
+
+  const auto readAt = [](void* ctx, uint32_t offset, uint8_t* buf, size_t size) -> int {
+    auto* file = static_cast<HalFile*>(ctx);
+    if (!file->seekSet(offset)) return -1;
+    return file->read(buf, size);
+  };
+
+  const PdbReader::Status status = reader->open(&src, readAt, static_cast<uint32_t>(src.size()));
+  if (status != PdbReader::Status::Ok) {
+    LOG_ERR("TXT", "Not a readable PalmDOC file (status %d): %s", static_cast<int>(status), filepath.c_str());
+    return false;
+  }
+
+  const bool ok = TxtToHtml::stream(filepath, reader.get(), PdbReader::readCallback, out);
+  LOG_DBG("TXT", "Converted PDB to HTML in %lu ms (%u text bytes, %u records)", millis() - t0,
+          static_cast<unsigned>(reader->textLength()), static_cast<unsigned>(reader->textRecordCount()));
+  return ok;
+}
+
 bool Txt::streamTxtToHtml(const std::string& filepath, Print& out) {
   const uint32_t t0 = millis();
   HalFile src;
@@ -104,6 +132,10 @@ bool Txt::streamTxtToHtml(const std::string& filepath, Print& out) {
 
   const size_t srcSize = src.size();
   LOG_DBG("TXT", "Converting TXT/MD to HTML: %s (%zu bytes)", filepath.c_str(), srcSize);
+
+  if (FsHelpers::hasPdbExtension(filepath)) {
+    return streamPdbToHtml(filepath, src, out);
+  }
 
   const bool ok = TxtToHtml::stream(
       filepath, &src, [](void* ctx, uint8_t* buf, size_t size) { return static_cast<HalFile*>(ctx)->read(buf, size); },
